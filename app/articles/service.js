@@ -14,13 +14,39 @@ const addArticle = async (payload) => {
   }
 };
 
-const getArticles = async () => {
+const getArticles = async (sortBy, sortType, keyword, page, size) => {
   try {
-    const article = await Article.find()
-    .populate('comments', 'description createdBy createdAt updatedAt')
-    .populate('category', 'name');
+    let aggregate = Article.aggregate();
+    if (keyword) {
+      aggregate.match({ title: { $regex: `${keyword}`, $options: 'i' }})
+      .group({
+        _id: '$_id', doc: { $first: '$$ROOT' }
+      })
+    }
 
-    return article;
+    let options;
+    if (sortBy) {
+      let type;
+      if (sortType === 'desc') {
+        type = -1;
+      } else if (sortType === 'asc') {
+        type = -1;
+      }
+
+      options = {
+        page: page, 
+        limit: size, 
+        sort: { _id: 1, createdAt: type },
+      }
+    } else {
+      options = {
+        page: page, limit: size
+      }
+    }
+
+    const result = await Article.aggregatePaginate(aggregate, options)
+
+    return result;
   } catch (error) {
     return error;
   }

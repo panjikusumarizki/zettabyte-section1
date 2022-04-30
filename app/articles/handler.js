@@ -26,12 +26,37 @@ const createArticle = async (req, res) => {
 
 const getAllArticle = async (req, res) => {
   try {
-    const article = await getArticles();
+    const { sortBy, sortType, keyword, page, size } = req.query;
+    let defPage = 1;
+    let defSize = 5;
+    let newPage = page ? parseInt(page) : defPage;
+    let newSize = size ? parseInt(size) : defSize;
 
-    res.status(200).json({
-      status: 'success',
-      data: article
-    });
+    const article = await getArticles(sortBy, sortType, keyword, newPage, newSize);
+
+    if (keyword) {
+      for (let i in article.docs) {
+        res.status(200).json({
+          status: 'success',
+          data: article.docs[i].doc,
+          page: article.page,
+          totalData: article.totalDocs,
+          totalPage: article.totalPages,
+          prevPage: article.prevPage,
+          nextPage: article.nextPage
+        });
+      }
+    } else {
+      res.status(200).json({
+        status: 'success',
+        data: article.docs,
+        page: article.page,
+        totalData: article.totalDocs,
+        totalPage: article.totalPages,
+        prevPage: article.prevPage,
+        nextPage: article.nextPage
+      });
+    }
   } catch (error) {
     res.status(500).json({
       status: 500,
