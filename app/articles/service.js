@@ -16,37 +16,57 @@ const addArticle = async (payload) => {
 
 const getArticles = async (sortBy, sortType, keyword, page, size) => {
   try {
-    let aggregate = Article.aggregate();
+    let newSortType
+    if (sortType === 'asc') {
+      newSortType = 1
+    } else if (sortType === 'desc') {
+      newSortType = -1
+    }
+    
+    let $match = {};
+
     if (keyword) {
-      aggregate.match({ title: { $regex: `${keyword}`, $options: 'i' }})
-      .group({
-        _id: '$_id', doc: { $first: '$$ROOT' }
-      })
+      $match.$or = [{title: {$regex: keyword, $options: 'i'}}];
     }
 
-    let options;
-    if (sortBy) {
-      let type;
-      if (sortType === 'desc') {
-        type = -1;
-      } else if (sortType === 'asc') {
-        type = -1;
+    const parameter = [{
+      $match
+    }, {
+      $project: {
+        _id: 1,
+        title: 1,
+        short_description: 1,
+        description: 1,
+        createdBy: 1,
+        createdAt: 1,
+        updated: 1,
+        category: 1,
+        comments: 1
       }
+    }]
 
-      options = {
-        page: page, 
-        limit: size, 
-        sort: { _id: 1, createdAt: type },
+    const parameterCount = [{
+      $match
+    }, {
+      $group: {
+        _id: null,
+        count: {
+          $sum: 1
+        }
       }
-    } else {
-      options = {
-        page: page, limit: size
-      }
-    }
+    }]
 
-    const result = await Article.aggregatePaginate(aggregate, options)
+    let param = parameter
+    const parameterSort = {};
+    parameterSort[sortBy] = newSortType
+    parameterSort._id = newSortType
+    const parameterPage = size * (page - 1)
+    const newSize = size * page
 
-    return result;
+    const article = await Article.aggregate(param).sort(parameterSort).limit(newSize).skip(parameterPage)
+    const count = await Article.aggregate(parameterCount)
+    
+    return { article, count };
   } catch (error) {
     return error;
   }

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const aggregatePaginate = require('mongoose-aggregate-paginate-v2');
 
 const articleSchema = mongoose.Schema({
   title: {
@@ -26,7 +25,5 @@ const articleSchema = mongoose.Schema({
     ref: 'Category'
   }
 }, { timestamps: true });
-
-articleSchema.plugin(aggregatePaginate);
 
 module.exports = mongoose.model('Article', articleSchema);

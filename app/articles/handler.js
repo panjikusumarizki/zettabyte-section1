@@ -31,32 +31,27 @@ const getAllArticle = async (req, res) => {
     let defSize = 5;
     let newPage = page ? parseInt(page) : defPage;
     let newSize = size ? parseInt(size) : defSize;
+    let sort = sortBy ? sortBy : 'createdAt';
+    let typeSort = sortType ? sortType : 'asc';
 
-    const article = await getArticles(sortBy, sortType, keyword, newPage, newSize);
+    const article = await getArticles(sort, typeSort, keyword, newPage, newSize);
 
-    if (keyword) {
-      for (let i in article.docs) {
-        res.status(200).json({
-          status: 'success',
-          data: article.docs[i].doc,
-          page: article.page,
-          totalData: article.totalDocs,
-          totalPage: article.totalPages,
-          prevPage: article.prevPage,
-          nextPage: article.nextPage
-        });
-      }
-    } else {
-      res.status(200).json({
-        status: 'success',
-        data: article.docs,
-        page: article.page,
-        totalData: article.totalDocs,
-        totalPage: article.totalPages,
-        prevPage: article.prevPage,
-        nextPage: article.nextPage
-      });
+    const totalData = article.count[0] ? article.count[0].count : 0;
+    const totalPage = Math.ceil(totalData / newSize);
+    const totalDataOnPage = article.article.length;
+
+    const meta = {
+      page: newPage,
+      totalPage,
+      totalData,
+      totalDataOnPage
     }
+
+    res.status(200).json({
+      status: 'success',
+      data: article.article,
+      meta
+    });
   } catch (error) {
     res.status(500).json({
       status: 500,
